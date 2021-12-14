@@ -1,30 +1,19 @@
+import kotlin.math.min
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
-    fun formatInput(input: List<String>): Pair<List<Int>, List<List<List<Int>>>> {
+    fun formatInput2(input: List<String>): Pair<List<Int>, List<List<List<Int>>>> {
         val order = input[0].split(",").map(String::toInt)
         val boards = input.drop(2).joinToString("\n").split("\n\n")
-            .map { s -> s.split("\n").map { l -> l.trim().split(Regex("\\s+")).map(String::toInt) } }
+            .map { s -> s.split("\n").map { l -> l.trim().split(Regex("\\s+")).map { i -> order.indexOf(i.toInt()) } } }
         return Pair(order, boards)
     }
 
     fun part1(input: List<String>, magic: Int = 1): Int {
-        fun pin(board: List<List<Int>>, el: Int): Pair<List<List<Int>>, Boolean> {
-            if (board.any { l -> l.all { num -> num == -1 } } ||
-                (0..4).any { i -> board.all { l -> l[i] == -1 } }) return Pair(board, false)
-            val newBoard = board.map { l -> l.map { e -> if (e == el) -1 else e } }
-            return Pair(newBoard, true)
-        }
-        val (order, boards) = formatInput(input)
+        val (order, boards) = formatInput2(input)
         val top = boards.map { board ->
-            var board = board
-            val pinned = order.takeWhile {
-                val (b, result) = pin(board, it)
-                board = b
-                result
-            }
-            val sumNonPinned = board.sumOf { l -> l.sumOf { e -> if (e == -1) 0 else e } }
-            Triple(pinned.size * magic, pinned.last(), sumNonPinned)
+            val time = min(board.minOf { it.maxOf { e -> e } }, (0..4).minOf { i -> board.maxOf { l -> l[i] } })
+            Triple(time * magic, order[time], board.sumOf { l -> l.sumOf { e -> if (e <= time) 0 else order[e] } })
         }.minByOrNull { triple -> triple.first }!!
         return top.second * top.third
     }
